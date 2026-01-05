@@ -1,0 +1,40 @@
+diff --git a/chrome/browser/ui/webui/chrome_web_ui_controller_factory.cc b/chrome/browser/ui/webui/chrome_web_ui_controller_factory.cc
+--- a/chrome/browser/ui/webui/chrome_web_ui_controller_factory.cc
++++ b/chrome/browser/ui/webui/chrome_web_ui_controller_factory.cc
+@@ -XXX,6 +XXX,10 @@
+ #include "chrome/browser/ui/webui/version/version_ui.h"
+ // ... other includes ...
+
++#if BUILDFLAG(IS_WIN)
++#include "chrome/browser/bladeblaid/profiles_lite_ui.h"
++#endif
++
+ namespace {
+ // ... namespace content ...
+
+@@ -XXX,6 +XXX,14 @@ WebUIFactoryFunction GetWebUIFactoryFunction(WebUI* web_ui,
+   // ... other URL handlers ...
+
++#if BUILDFLAG(IS_WIN)
++  // BladeBlaid Profiles Lite page
++  if (url.host_piece() == "profiles-lite") {
++    return &NewWebUI<bladeblaid::ProfilesLiteUI>;
++  }
++#endif
++
+   // Handle chrome://settings specially
+   if (url.host_piece() == chrome::kChromeUISettingsHost) {
+     return &NewWebUI<settings::SettingsUI>;
+@@ -XXX,6 +XXX,13 @@ bool ChromeWebUIControllerFactory::CanHandleUrl(const GURL& url) {
+   // ... existing checks ...
+
++#if BUILDFLAG(IS_WIN)
++  // BladeBlaid profiles page
++  if (url.host_piece() == "profiles-lite") {
++    return true;
++  }
++#endif
++
+   return false;
+ }
+

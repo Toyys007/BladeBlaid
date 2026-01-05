@@ -1,0 +1,25 @@
+diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
+--- a/chrome/browser/BUILD.gn
++++ b/chrome/browser/BUILD.gn
+@@ -XXX,6 +XXX,7 @@ static_library("browser") {
+     "//chrome/browser/accessibility",
+     "//chrome/browser/autocomplete",
+     "//chrome/browser/autofill",
++    "//chrome/browser/bladeblaid",
+     "//chrome/browser/bookmarks",
+     "//chrome/browser/browsing_data",
+     # ... more deps ...
+@@ -XXX,6 +XXX,12 @@ static_library("browser") {
+     ]
+   }
+
++  # BladeBlaid Profile Manager (Windows only)
++  if (is_win) {
++    deps += [
++      "//chrome/browser/bladeblaid:webui",
++    ]
++  }
++
+   if (is_chromeos) {
+     # ... chromeos specific code ...
+   }

@@ -1,0 +1,30 @@
+diff --git a/chrome/browser/chrome_browser_main.cc b/chrome/browser/chrome_browser_main.cc
+--- a/chrome/browser/chrome_browser_main.cc
++++ b/chrome/browser/chrome_browser_main.cc
+@@ -XXX,6 +XXX,10 @@
+ #include "components/startup_metric_utils/browser/startup_metric_utils.h"
+ // ... other includes ...
+
++#if BUILDFLAG(IS_WIN)
++#include "chrome/browser/bladeblaid/bladeblaid_profile_service.h"
++#endif
++
+ namespace {
+ // ... namespace content ...
+ }  // namespace
+@@ -XXX,6 +XXX,15 @@ int ChromeBrowserMainParts::PreCreateThreadsImpl() {
+   // ... existing initialization code ...
+
++#if BUILDFLAG(IS_WIN)
++  // Initialize BladeBlaid Profile Service
++  // This loads profiles.json and sets up profile management
++  bladeblaid::BladeBlaidProfileService* bladeblaid_service =
++      bladeblaid::BladeBlaidProfileService::GetInstance();
++  if (!bladeblaid_service->Initialize()) {
++    LOG(WARNING) << "BladeBlaid: Profile service initialization failed";
++  }
++#endif
++
+   return result_code;
+ }
+

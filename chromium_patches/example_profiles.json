@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "profiles": [
+    {
+      "profile_id": "desktop_01",
+      "type": "desktop",
+      "label": "Main Bing Profile",
+      "search_engine": "bing",
+      "identity": {
+        "uses_microsoft_account": true,
+        "email_label": "example01@outlook.com"
+      },
+      "fingerprint": {
+        "platform": "windows",
+        "ua_profile": "chrome_windows",
+        "screen": {
+          "width": 1920,
+          "height": 1080,
+          "device_pixel_ratio": 1.25,
+          "window_variation": {
+            "inner_width": 1760,
+            "inner_height": 920
+          }
+        },
+        "locale": {
+          "language": "ru-RU",
+          "timezone": "Europe/Kyiv"
+        },
+        "hardware": {
+          "cpu_cores": 8,
+          "memory_gb": 16,
+          "gpu_vendor": "intel"
+        },
+        "noise_seed": "a9f3c1e2"
+      },
+      "privacy": {
+        "block_third_party_cookies": true,
+        "block_trackers": true,
+        "sanitize_urls": true,
+        "webrtc_local_ip": false
+      },
+      "proxy": null
+    },
+    {
+      "profile_id": "mobile_01",
+      "type": "mobile",
+      "label": "Mobile Bing Profile",
+      "search_engine": "bing",
+      "identity": {
+        "uses_microsoft_account": true,
+        "email_label": "example02@outlook.com"
+      },
+      "fingerprint": {
+        "platform": "android",
+        "ua_profile": "chrome_android",
+        "screen": {
+          "width": 412,
+          "height": 915,
+          "device_pixel_ratio": 2.625,
+          "window_variation": {
+            "inner_width": 412,
+            "inner_height": 823
+          }
+        },
+        "locale": {
+          "language": "en-US",
+          "timezone": "America/New_York"
+        },
+        "hardware": {
+          "cpu_cores": 8,
+          "memory_gb": 8,
+          "gpu_vendor": "qualcomm"
+        },
+        "noise_seed": "b7d2e4f1"
+      },
+      "privacy": {
+        "block_third_party_cookies": true,
+        "block_trackers": true,
+        "sanitize_urls": true,
+        "webrtc_local_ip": false
+      },
+      "proxy": null
+    }
+  ]
+}

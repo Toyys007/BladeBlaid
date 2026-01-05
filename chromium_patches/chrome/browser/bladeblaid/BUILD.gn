@@ -1,0 +1,38 @@
+# Copyright 2024 The BladeBlaid Authors
+# Use of this source code is governed by a BSD-style license.
+
+import("//build/config/chromeos/ui_mode.gni")
+
+# Only build on Windows
+assert(is_win, "BladeBlaid is Windows-only")
+
+source_set("bladeblaid") {
+  sources = [
+    "bladeblaid_profile_service.cc",
+    "bladeblaid_profile_service.h",
+    "bladeblaid_profile_types.h",
+  ]
+
+  deps = [
+    "//base",
+  ]
+
+  # Windows-specific libraries
+  libs = [ "shell32.lib" ]
+}
+
+source_set("webui") {
+  sources = [
+    "profiles_lite_ui.cc",
+    "profiles_lite_ui.h",
+  ]
+
+  deps = [
+    ":bladeblaid",
+    "//base",
+    "//chrome/browser/profiles",
+    "//content/public/browser",
+    "//services/network/public/mojom",
+    "//url",
+  ]
+}

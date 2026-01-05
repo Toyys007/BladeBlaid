@@ -1,0 +1,44 @@
+diff --git a/chrome/browser/ui/toolbar/app_menu_model.cc b/chrome/browser/ui/toolbar/app_menu_model.cc
+--- a/chrome/browser/ui/toolbar/app_menu_model.cc
++++ b/chrome/browser/ui/toolbar/app_menu_model.cc
+@@ -XXX,6 +XXX,10 @@
+ #include "chrome/browser/ui/browser_commands.h"
+ // ... other includes ...
+
++#if BUILDFLAG(IS_WIN)
++#include "chrome/browser/bladeblaid/bladeblaid_profile_service.h"
++#endif
++
+ namespace {
+ // ... namespace content ...
+ }  // namespace
+@@ -XXX,6 +XXX,15 @@ void AppMenuModel::Build() {
+   // Add Settings item
+   AddItemWithStringId(IDC_OPTIONS, IDS_SETTINGS);
+
++#if BUILDFLAG(IS_WIN)
++  // Add BladeBlaid Profiles menu item
++  // Placed near Settings for easy access
++  AddSeparator(ui::NORMAL_SEPARATOR);
++  AddItem(IDC_BLADEBLAID_PROFILES, u"Profiles\u2026");
++  // Note: Using hardcoded string as this is a fork-specific feature
++  // To use localized string: AddItemWithStringId(IDC_BLADEBLAID_PROFILES, IDS_BLADEBLAID_PROFILES);
++#endif
++
+   // Add More Tools submenu
+   AddSubMenu(IDC_MORE_TOOLS_MENU, ...);
+
+diff --git a/chrome/browser/ui/toolbar/app_menu_model.h b/chrome/browser/ui/toolbar/app_menu_model.h
+--- a/chrome/browser/ui/toolbar/app_menu_model.h
++++ b/chrome/browser/ui/toolbar/app_menu_model.h
+@@ -XXX,6 +XXX,10 @@ class AppMenuModel : public ui::SimpleMenuModel,
+   // ... existing methods ...
+
++#if BUILDFLAG(IS_WIN)
++  void ExecuteBladeBlaidProfiles();
++#endif
++
+  private:
+   // ... existing members ...
+ };
+

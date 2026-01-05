@@ -1,0 +1,27 @@
+diff --git a/chrome/browser/resources/profiles_lite/profiles_lite.html b/chrome/browser/resources/profiles_lite/profiles_lite.html
+new file mode 100644
+--- /dev/null
++++ b/chrome/browser/resources/profiles_lite/profiles_lite.html
+@@ -0,0 +1,3 @@
++<!-- This file is a placeholder. The actual HTML is embedded in profiles_lite_ui.cc -->
++<!-- This approach avoids adding grit resource dependencies for a simple internal page -->
++<!-- See: chrome/browser/bladeblaid/profiles_lite_ui.cc::kProfilesLiteHTML -->
+
+diff --git a/chrome/browser/browser_resources.grd b/chrome/browser/browser_resources.grd
+--- a/chrome/browser/browser_resources.grd
++++ b/chrome/browser/browser_resources.grd
+@@ -XXX,6 +XXX,12 @@
+       <!-- Other resources -->
+       <include name="IDR_VERSION_UI_HTML" file="resources\version\version.html" type="BINDATA" />
+
++      <!-- BladeBlaid Profiles Lite (Windows only) -->
++      <!-- Note: HTML is embedded in C++ for simplicity. This resource ID is -->
++      <!-- defined but uses embedded content from profiles_lite_ui.cc -->
++      <if expr="is_win">
++        <include name="IDR_PROFILES_LITE_HTML" file="resources\profiles_lite\profiles_lite.html" type="BINDATA" />
++      </if>
++
+     </includes>
+   </release>
+ </grit>
+

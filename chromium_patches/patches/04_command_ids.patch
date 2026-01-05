@@ -1,0 +1,15 @@
+diff --git a/chrome/app/chrome_command_ids.h b/chrome/app/chrome_command_ids.h
+--- a/chrome/app/chrome_command_ids.h
++++ b/chrome/app/chrome_command_ids.h
+@@ -XXX,6 +XXX,11 @@
+ #define IDC_SHOW_SIGNIN                         40035
+ // ... other command IDs ...
+
++// BladeBlaid Profile Manager (Windows only)
++#if BUILDFLAG(IS_WIN)
++#define IDC_BLADEBLAID_PROFILES                 40500
++#endif
++
+ // NOTE: The last valid command value is 57343 (0xDFFF)
+ // See chrome/app/chrome_dll_resource.h for the range of valid values
+
