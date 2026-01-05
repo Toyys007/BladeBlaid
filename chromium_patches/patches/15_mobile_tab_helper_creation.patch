@@ -1,0 +1,62 @@
+diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
+--- a/chrome/browser/ui/browser.cc
++++ b/chrome/browser/ui/browser.cc
+@@ -XXX,6 +XXX,11 @@
+ #include "chrome/browser/ui/tab_helpers.h"
+ // ... other includes ...
+
++#if BUILDFLAG(IS_WIN)
++#include "base/command_line.h"
++#include "chrome/browser/bladeblaid/mobile_emulation_tab_helper.h"
++#endif
++
+ namespace {
+ // ... namespace content ...
+ }  // namespace
+@@ -XXX,6 +XXX,18 @@ void Browser::TabInsertedAt(TabStripModel* tab_strip_model,
+   // ... existing code ...
+
++#if BUILDFLAG(IS_WIN)
++  // BladeBlaid: Create mobile emulation tab helper if needed
++  const base::CommandLine& cmd = *base::CommandLine::ForCurrentProcess();
++  if (cmd.HasSwitch("bladeblaid-profile") &&
++      cmd.HasSwitch("bladeblaid-mobile")) {
++    std::string profile_id = cmd.GetSwitchValueASCII("bladeblaid-profile");
++    bladeblaid::MaybeCreateMobileEmulationTabHelper(
++        contents->web_contents(),
++        profile_id);
++  }
++#endif
++
+ }
+
+diff --git a/chrome/browser/ui/tab_helpers.cc b/chrome/browser/ui/tab_helpers.cc
+--- a/chrome/browser/ui/tab_helpers.cc
++++ b/chrome/browser/ui/tab_helpers.cc
+@@ -XXX,6 +XXX,11 @@
+ #include "chrome/browser/ui/prefs/prefs_tab_helper.h"
+ // ... other includes ...
+
++#if BUILDFLAG(IS_WIN)
++#include "base/command_line.h"
++#include "chrome/browser/bladeblaid/mobile_emulation_tab_helper.h"
++#endif
++
+ namespace {
+ // ... namespace content ...
+ }  // namespace
+@@ -XXX,6 +XXX,17 @@ void TabHelpers::AttachTabHelpers(WebContents* web_contents) {
+   // ... existing helpers ...
+
++#if BUILDFLAG(IS_WIN)
++  // BladeBlaid: Attach mobile emulation helper if in mobile mode
++  const base::CommandLine& cmd = *base::CommandLine::ForCurrentProcess();
++  if (cmd.HasSwitch("bladeblaid-profile") &&
++      cmd.HasSwitch("bladeblaid-mobile")) {
++    std::string profile_id = cmd.GetSwitchValueASCII("bladeblaid-profile");
++    bladeblaid::MaybeCreateMobileEmulationTabHelper(web_contents, profile_id);
++  }
++#endif
++
+ }
+

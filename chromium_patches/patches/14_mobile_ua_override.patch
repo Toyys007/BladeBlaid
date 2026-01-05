@@ -1,0 +1,65 @@
+diff --git a/content/browser/renderer_host/navigator.cc b/content/browser/renderer_host/navigator.cc
+--- a/content/browser/renderer_host/navigator.cc
++++ b/content/browser/renderer_host/navigator.cc
+@@ -XXX,6 +XXX,10 @@
+ #include "content/public/browser/navigation_handle.h"
+ // ... other includes ...
+
++#if BUILDFLAG(IS_WIN)
++#include "chrome/browser/bladeblaid/mobile_ua_override.h"
++#endif
++
+ namespace content {
+ // ... namespace content ...
+
+@@ -XXX,6 +XXX,15 @@ void Navigator::DidStartMainFrameNavigation(
+   // ... existing code ...
+
++#if BUILDFLAG(IS_WIN)
++  // BladeBlaid: Override user agent for mobile profiles
++  if (bladeblaid::ShouldUseMobileUserAgent()) {
++    std::string mobile_ua = bladeblaid::GetMobileUserAgentOverride();
++    if (!mobile_ua.empty()) {
++      // Apply UA override to navigation
++      navigation_request->SetUserAgentOverride(mobile_ua);
++    }
++  }
++#endif
++
+ }
+
+diff --git a/chrome/browser/chrome_content_browser_client.cc b/chrome/browser/chrome_content_browser_client.cc
+--- a/chrome/browser/chrome_content_browser_client.cc
++++ b/chrome/browser/chrome_content_browser_client.cc
+@@ -XXX,6 +XXX,11 @@
+ #include "chrome/browser/bladeblaid/bladeblaid_url_loader_throttle.h"
++#include "chrome/browser/bladeblaid/mobile_ua_override.h"
+ #endif
+
+@@ -XXX,6 +XXX,19 @@ std::string ChromeContentBrowserClient::GetUserAgent() {
++#if BUILDFLAG(IS_WIN)
++  // BladeBlaid: Return mobile UA if in mobile emulation mode
++  if (bladeblaid::ShouldUseMobileUserAgent()) {
++    std::string mobile_ua = bladeblaid::GetMobileUserAgentOverride();
++    if (!mobile_ua.empty()) {
++      return mobile_ua;
++    }
++  }
++#endif
++
+   return GetUserAgentInternal();
+ }
+
+@@ -XXX,6 +XXX,18 @@ blink::UserAgentMetadata
+ ChromeContentBrowserClient::GetUserAgentMetadata() {
++#if BUILDFLAG(IS_WIN)
++  // BladeBlaid: Return mobile UA metadata if in mobile emulation mode
++  auto mobile_metadata = bladeblaid::GetMobileUserAgentMetadataOverride();
++  if (mobile_metadata.has_value()) {
++    return *mobile_metadata;
++  }
++#endif
++
+   return GetUserAgentMetadataInternal();
+ }
+

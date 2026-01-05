@@ -49,6 +49,27 @@ source_set("privacy") {
   ]
 }
 
+source_set("mobile_emulation") {
+  sources = [
+    "mobile_emulation.cc",
+    "mobile_emulation.h",
+    "mobile_emulation_tab_helper.cc",
+    "mobile_emulation_tab_helper.h",
+    "mobile_ua_override.cc",
+    "mobile_ua_override.h",
+  ]
+
+  deps = [
+    ":bladeblaid",
+    "//base",
+    "//content/public/browser",
+    "//third_party/blink/public/common",
+    "//third_party/blink/public/mojom:mojom_platform",
+    "//ui/display/mojom",
+    "//ui/gfx/geometry",
+  ]
+}
+
 source_set("webui") {
   sources = [
     "profiles_lite_ui.cc",

@@ -1,0 +1,50 @@
+diff --git a/third_party/blink/renderer/core/frame/navigator.cc b/third_party/blink/renderer/core/frame/navigator.cc
+--- a/third_party/blink/renderer/core/frame/navigator.cc
++++ b/third_party/blink/renderer/core/frame/navigator.cc
+@@ -XXX,6 +XXX,10 @@
+ #include "third_party/blink/renderer/core/frame/local_frame.h"
+ #include "third_party/blink/renderer/core/frame/settings.h"
+ // ... other includes ...
+
++#include "third_party/blink/public/common/widget/device_emulation_params.h"
++#include "third_party/blink/public/mojom/widget/device_emulation_params.mojom-blink.h"
++
+ namespace blink {
+ // ... namespace content ...
+
+@@ -XXX,6 +XXX,21 @@ int Navigator::maxTouchPoints() const {
+   // ... existing implementation ...
+
++  // BladeBlaid: Return mobile touch points for emulation
++  LocalFrame* frame = GetFrame();
++  if (frame) {
++    const blink::DeviceEmulationParams* params =
++        frame->GetDeviceEmulationParams();
++    if (params && params->screen_type ==
++            mojom::blink::EmulatedScreenType::kMobile) {
++      // Standard mobile devices support 5-10 touch points
++      // Return 5 for compatibility (most gestures need <= 5)
++      return 5;
++    }
++  }
++
+   return original_value;
+ }
+
+@@ -XXX,6 +XXX,18 @@ String Navigator::platform() const {
+   // ... existing implementation ...
+
++  // BladeBlaid: Return Android platform for mobile emulation
++  LocalFrame* frame = GetFrame();
++  if (frame) {
++    const blink::DeviceEmulationParams* params =
++        frame->GetDeviceEmulationParams();
++    if (params && params->screen_type ==
++            mojom::blink::EmulatedScreenType::kMobile) {
++      return "Linux armv8l";  // Standard Android platform string
++    }
++  }
++
+   return original_platform;
+ }
+

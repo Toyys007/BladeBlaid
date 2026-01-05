@@ -89,7 +89,13 @@ chrome/browser/bladeblaid/
 ├── bladeblaid_navigation_throttle.h  # Task B
 ├── bladeblaid_navigation_throttle.cc # Task B
 ├── bladeblaid_url_loader_throttle.h  # Task B
-└── bladeblaid_url_loader_throttle.cc # Task B
+├── bladeblaid_url_loader_throttle.cc # Task B
+├── mobile_emulation.h                # Task D
+├── mobile_emulation.cc               # Task D
+├── mobile_emulation_tab_helper.h     # Task D
+├── mobile_emulation_tab_helper.cc    # Task D
+├── mobile_ua_override.h              # Task D
+└── mobile_ua_override.cc             # Task D
 ```
 
 ### Files to Modify (Patches)
@@ -110,6 +116,12 @@ See `patches/` directory for unified diffs:
 11. **chrome/browser/profiles/profile_impl.cc** - Apply privacy settings on profile init
 12. **Resource throttle** - Block tracker subresources
 13. **URL loader throttle registration** - Register throttle in content browser client
+
+**Task D Patches (Mobile Emulation):**
+14. **Mobile UA override** - Override GetUserAgent() and GetUserAgentMetadata() for mobile
+15. **Tab helper creation** - Create MobileEmulationTabHelper for mobile profiles
+16. **Touch/pointer media queries** - Override CSS media features for mobile
+17. **Navigator touch** - Override maxTouchPoints and platform for mobile
 
 ## Step 4: Configure GN Build
 
@@ -250,6 +262,52 @@ You should see:
 1. Check `chrome://settings/security`
 2. "Always use secure connections" should be enabled
 3. Try visiting `http://` only site - should attempt HTTPS first
+
+### 6. Verify Mobile Emulation (Task D)
+
+**Launch Mobile Profile:**
+```powershell
+chrome.exe --bladeblaid-profile=mobile_01 --bladeblaid-mobile --user-data-dir="%LOCALAPPDATA%\BladeBlaid\Profiles\BladeBlaid_mobile_01"
+```
+
+**User Agent Check:**
+1. Open DevTools Console
+2. Run: `navigator.userAgent`
+3. Should contain "Android" and "Mobile", NOT "Windows"
+4. Example: `Mozilla/5.0 (Linux; Android 13; Pixel 6) AppleWebKit/537.36...`
+
+**Viewport Check:**
+1. Run: `[screen.width, screen.height, window.devicePixelRatio]`
+2. Should match mobile profile spec (e.g., `[412, 915, 2.625]`)
+
+**Touch Support Check:**
+1. Run: `navigator.maxTouchPoints`
+2. Should return 5 (not 0)
+3. Run: `'ontouchstart' in window`
+4. Should return `true`
+
+**CSS Media Query Check:**
+1. Run: `matchMedia('(pointer: coarse)').matches`
+2. Should return `true`
+3. Run: `matchMedia('(hover: none)').matches`
+4. Should return `true`
+5. Run: `matchMedia('(hover: hover)').matches`
+6. Should return `false`
+
+**Platform Check:**
+1. Run: `navigator.platform`
+2. Should return `Linux armv8l` (Android), NOT `Win32`
+
+**Responsive Layout Test:**
+1. Open `test_pages/mobile_emulation_test.html`
+2. The responsive box should be BLUE (mobile layout)
+3. All indicators should show mobile values
+4. Touch events should work in the touch test area
+
+**What's My Browser Test:**
+1. Visit: `https://www.whatismybrowser.com/`
+2. Should detect as "Chrome on Android"
+3. Device should show as mobile phone
 
 ## Troubleshooting
 

@@ -57,7 +57,12 @@ chromium_patches/
 │   ├── search_engine_manager.h/.cc     # Task B
 │   ├── tracker_blocker.h/.cc           # Task B
 │   ├── url_sanitizer.h/.cc             # Task B
+│   ├── mobile_emulation.h/.cc          # Task D
+│   ├── mobile_emulation_tab_helper.h/.cc  # Task D
+│   ├── mobile_ua_override.h/.cc        # Task D
 │   └── BUILD.gn
+├── test_pages/                   # Test pages for verification
+│   └── mobile_emulation_test.html
 ├── patches/                      # Unified diffs for Chromium integration
 ├── example_profiles.json         # Example configuration
 └── BUILD_INSTRUCTIONS.md         # Build guide
@@ -100,6 +105,35 @@ Per-profile privacy defaults:
 
 `utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`,
 `gclid`, `fbclid`, `msclkid`, `yclid`, `ttclid`, `ref`, `ref_src`, and more.
+
+## Task D Implementation
+
+Mobile emulation (Variant A - Chrome mobile emulation style):
+
+- ✅ **Chrome Android UA** - Full mobile user agent with device model
+- ✅ **Viewport from spec** - screen width/height + devicePixelRatio
+- ✅ **Touch events** - maxTouchPoints = 5, ontouchstart enabled
+- ✅ **Pointer: coarse** - CSS media query returns coarse pointer
+- ✅ **Hover: none** - CSS media query returns no hover capability
+- ✅ **Platform override** - navigator.platform returns "Linux armv8l"
+
+### Mobile Emulation Details
+
+| Property | Desktop Value | Mobile Emulated Value |
+|----------|--------------|----------------------|
+| navigator.userAgent | Windows Chrome | Android Chrome Mobile |
+| navigator.platform | Win32 | Linux armv8l |
+| navigator.maxTouchPoints | 0 | 5 |
+| screen.width | 1920 | 412 (profile spec) |
+| devicePixelRatio | 1.0 | 2.625 (profile spec) |
+| pointer media | fine | coarse |
+| hover media | hover | none |
+
+### Launching Mobile Profile
+
+```powershell
+chrome.exe --bladeblaid-profile=mobile_01 --bladeblaid-mobile --user-data-dir="%LOCALAPPDATA%\BladeBlaid\Profiles\BladeBlaid_mobile_01"
+```
 
 ## Hard Rules
 

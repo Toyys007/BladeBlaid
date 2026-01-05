@@ -1,0 +1,82 @@
+diff --git a/third_party/blink/renderer/core/css/media_values.cc b/third_party/blink/renderer/core/css/media_values.cc
+--- a/third_party/blink/renderer/core/css/media_values.cc
++++ b/third_party/blink/renderer/core/css/media_values.cc
+@@ -XXX,6 +XXX,10 @@
+ #include "third_party/blink/renderer/core/frame/settings.h"
+ // ... other includes ...
+
++// BladeBlaid mobile emulation support
++// When device emulation is active with mobile screen type,
++// these methods return mobile-appropriate values.
++
+ namespace blink {
+
+@@ -XXX,6 +XXX,12 @@ MediaValues::PointerType MediaValues::PrimaryPointerType() const {
+   // ... existing implementation ...
+
++  // BladeBlaid: Return coarse pointer for mobile emulation
++  if (GetDeviceEmulationParams() &&
++      GetDeviceEmulationParams()->screen_type ==
++          mojom::blink::EmulatedScreenType::kMobile) {
++    return PointerType::kCoarse;
++  }
++
+   return PointerType::kFine;
+ }
+
+@@ -XXX,6 +XXX,12 @@ int MediaValues::AvailablePointerTypes() const {
+   // ... existing implementation ...
+
++  // BladeBlaid: Return coarse for mobile emulation
++  if (GetDeviceEmulationParams() &&
++      GetDeviceEmulationParams()->screen_type ==
++          mojom::blink::EmulatedScreenType::kMobile) {
++    return static_cast<int>(PointerType::kCoarse);
++  }
++
+   return result;
+ }
+
+@@ -XXX,6 +XXX,12 @@ MediaValues::HoverType MediaValues::PrimaryHoverType() const {
+   // ... existing implementation ...
+
++  // BladeBlaid: Return none for mobile emulation (touchscreens don't hover)
++  if (GetDeviceEmulationParams() &&
++      GetDeviceEmulationParams()->screen_type ==
++          mojom::blink::EmulatedScreenType::kMobile) {
++    return HoverType::kNone;
++  }
++
+   return HoverType::kHover;
+ }
+
+@@ -XXX,6 +XXX,12 @@ int MediaValues::AvailableHoverTypes() const {
+   // ... existing implementation ...
+
++  // BladeBlaid: Return none for mobile emulation
++  if (GetDeviceEmulationParams() &&
++      GetDeviceEmulationParams()->screen_type ==
++          mojom::blink::EmulatedScreenType::kMobile) {
++    return static_cast<int>(HoverType::kNone);
++  }
++
+   return result;
+ }
+
+diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
+--- a/third_party/blink/renderer/core/frame/local_frame.cc
++++ b/third_party/blink/renderer/core/frame/local_frame.cc
+@@ -XXX,6 +XXX,15 @@ bool LocalFrame::HasTouchEventHandlers() const {
+   // ... existing implementation ...
+ }
+
++// BladeBlaid: Report touch capability for mobile emulation
++bool LocalFrame::HasTouchScreenCapability() const {
++  if (GetDeviceEmulationParams() &&
++      GetDeviceEmulationParams()->screen_type ==
++          mojom::blink::EmulatedScreenType::kMobile) {
++    return true;
++  }
++  return false;
++}
+

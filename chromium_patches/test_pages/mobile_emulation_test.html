@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BladeBlaid Mobile Emulation Test</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #fff;
+    }
+
+    .test-section {
+      background: #252542;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      border: 1px solid #3a3a5a;
+    }
+
+    .test-section h2 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      color: #8b8bd0;
+    }
+
+    .test-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #3a3a5a;
+    }
+
+    .test-item:last-child {
+      border-bottom: none;
+    }
+
+    .test-label {
+      color: #aaa;
+    }
+
+    .test-value {
+      font-family: 'Consolas', monospace;
+      color: #fff;
+    }
+
+    .test-value.mobile {
+      color: #22c55e;
+    }
+
+    .test-value.desktop {
+      color: #f97316;
+    }
+
+    .media-indicator {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .media-indicator.active {
+      background: #22c55e;
+      color: #fff;
+    }
+
+    .media-indicator.inactive {
+      background: #4a4a6a;
+      color: #888;
+    }
+
+    .responsive-demo {
+      margin-top: 20px;
+    }
+
+    /* Mobile-first responsive styles */
+    .responsive-box {
+      background: #3b82f6;
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 18px;
+    }
+
+    /* Desktop override */
+    @media (min-width: 768px) and (hover: hover) and (pointer: fine) {
+      .responsive-box {
+        background: #f97316;
+      }
+      .responsive-box::after {
+        content: " (Desktop Layout)";
+      }
+    }
+
+    /* Mobile specific */
+    @media (max-width: 767px), (hover: none), (pointer: coarse) {
+      .responsive-box::after {
+        content: " (Mobile Layout)";
+      }
+    }
+
+    .touch-area {
+      background: #4a4a6a;
+      border: 2px dashed #6a6a8a;
+      border-radius: 8px;
+      padding: 40px;
+      text-align: center;
+      margin-top: 20px;
+      cursor: pointer;
+    }
+
+    .touch-area.touched {
+      background: #22c55e;
+      border-color: #16a34a;
+    }
+
+    #touch-log {
+      font-size: 12px;
+      color: #888;
+      margin-top: 12px;
+      max-height: 100px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Mobile Emulation Test</h1>
+
+  <div class="test-section">
+    <h2>User Agent</h2>
+    <div class="test-item">
+      <span class="test-label">navigator.userAgent</span>
+      <span class="test-value" id="ua-value"></span>
+    </div>
+    <div class="test-item">
+      <span class="test-label">Mobile UA Detected</span>
+      <span class="test-value" id="ua-mobile"></span>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>Screen &amp; Viewport</h2>
+    <div class="test-item">
+      <span class="test-label">screen.width x height</span>
+      <span class="test-value" id="screen-size"></span>
+    </div>
+    <div class="test-item">
+      <span class="test-label">window.innerWidth x innerHeight</span>
+      <span class="test-value" id="viewport-size"></span>
+    </div>
+    <div class="test-item">
+      <span class="test-label">devicePixelRatio</span>
+      <span class="test-value" id="dpr"></span>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>Touch &amp; Pointer</h2>
+    <div class="test-item">
+      <span class="test-label">navigator.maxTouchPoints</span>
+      <span class="test-value" id="touch-points"></span>
+    </div>
+    <div class="test-item">
+      <span class="test-label">'ontouchstart' in window</span>
+      <span class="test-value" id="touch-support"></span>
+    </div>
+    <div class="test-item">
+      <span class="test-label">navigator.platform</span>
+      <span class="test-value" id="platform"></span>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>CSS Media Queries</h2>
+    <div class="test-item">
+      <span class="test-label">pointer: coarse</span>
+      <span id="mq-pointer-coarse"></span>
+    </div>
+    <div class="test-item">
+      <span class="test-label">pointer: fine</span>
+      <span id="mq-pointer-fine"></span>
+    </div>
+    <div class="test-item">
+      <span class="test-label">hover: hover</span>
+      <span id="mq-hover-hover"></span>
+    </div>
+    <div class="test-item">
+      <span class="test-label">hover: none</span>
+      <span id="mq-hover-none"></span>
+    </div>
+    <div class="test-item">
+      <span class="test-label">any-pointer: coarse</span>
+      <span id="mq-any-pointer-coarse"></span>
+    </div>
+    <div class="test-item">
+      <span class="test-label">any-hover: none</span>
+      <span id="mq-any-hover-none"></span>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>Responsive Layout Test</h2>
+    <p style="color: #888; font-size: 14px; margin-bottom: 12px;">
+      This box should be BLUE on mobile, ORANGE on desktop:
+    </p>
+    <div class="responsive-box">
+      Responsive Content
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>Touch Event Test</h2>
+    <div class="touch-area" id="touch-area">
+      Tap or click here to test touch events
+    </div>
+    <div id="touch-log"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Summary</h2>
+    <div class="test-item">
+      <span class="test-label">Detection Result</span>
+      <span class="test-value" id="summary-result"></span>
+    </div>
+  </div>
+
+  <script>
+    // User Agent detection
+    const ua = navigator.userAgent;
+    document.getElementById('ua-value').textContent = ua.substring(0, 80) + '...';
+    const isMobileUA = /Android|iPhone|iPad|Mobile/i.test(ua);
+    const uaMobileEl = document.getElementById('ua-mobile');
+    uaMobileEl.textContent = isMobileUA ? 'Yes (Android/Mobile found)' : 'No';
+    uaMobileEl.className = 'test-value ' + (isMobileUA ? 'mobile' : 'desktop');
+
+    // Screen and viewport
+    document.getElementById('screen-size').textContent =
+      `${screen.width} x ${screen.height}`;
+    document.getElementById('viewport-size').textContent =
+      `${window.innerWidth} x ${window.innerHeight}`;
+    document.getElementById('dpr').textContent = window.devicePixelRatio;
+
+    // Touch support
+    const touchPoints = navigator.maxTouchPoints || 0;
+    const touchPointsEl = document.getElementById('touch-points');
+    touchPointsEl.textContent = touchPoints;
+    touchPointsEl.className = 'test-value ' + (touchPoints > 0 ? 'mobile' : 'desktop');
+
+    const hasTouchStart = 'ontouchstart' in window;
+    const touchSupportEl = document.getElementById('touch-support');
+    touchSupportEl.textContent = hasTouchStart ? 'true' : 'false';
+    touchSupportEl.className = 'test-value ' + (hasTouchStart ? 'mobile' : 'desktop');
+
+    document.getElementById('platform').textContent = navigator.platform;
+
+    // Media queries
+    function testMediaQuery(query, elementId) {
+      const matches = window.matchMedia(query).matches;
+      const el = document.getElementById(elementId);
+      el.innerHTML = `<span class="media-indicator ${matches ? 'active' : 'inactive'}">${matches ? 'MATCHES' : 'NO MATCH'}</span>`;
+    }
+
+    testMediaQuery('(pointer: coarse)', 'mq-pointer-coarse');
+    testMediaQuery('(pointer: fine)', 'mq-pointer-fine');
+    testMediaQuery('(hover: hover)', 'mq-hover-hover');
+    testMediaQuery('(hover: none)', 'mq-hover-none');
+    testMediaQuery('(any-pointer: coarse)', 'mq-any-pointer-coarse');
+    testMediaQuery('(any-hover: none)', 'mq-any-hover-none');
+
+    // Touch event test
+    const touchArea = document.getElementById('touch-area');
+    const touchLog = document.getElementById('touch-log');
+
+    function logEvent(type, detail) {
+      const time = new Date().toLocaleTimeString();
+      touchLog.innerHTML = `<div>${time}: ${type} - ${detail}</div>` + touchLog.innerHTML;
+    }
+
+    touchArea.addEventListener('touchstart', (e) => {
+      touchArea.classList.add('touched');
+      logEvent('touchstart', `${e.touches.length} touch(es)`);
+    });
+
+    touchArea.addEventListener('touchend', (e) => {
+      touchArea.classList.remove('touched');
+      logEvent('touchend', 'Touch released');
+    });
+
+    touchArea.addEventListener('click', (e) => {
+      logEvent('click', `at (${e.clientX}, ${e.clientY})`);
+    });
+
+    touchArea.addEventListener('mousedown', (e) => {
+      logEvent('mousedown', `button ${e.button}`);
+    });
+
+    // Summary
+    const summaryEl = document.getElementById('summary-result');
+    const isMobile = isMobileUA &&
+                     touchPoints > 0 &&
+                     window.matchMedia('(pointer: coarse)').matches &&
+                     window.matchMedia('(hover: none)').matches;
+
+    if (isMobile) {
+      summaryEl.innerHTML = '<span class="mobile">✓ MOBILE EMULATION ACTIVE</span>';
+    } else {
+      summaryEl.innerHTML = '<span class="desktop">✗ DESKTOP MODE</span>';
+    }
+
+    // Update on resize
+    window.addEventListener('resize', () => {
+      document.getElementById('viewport-size').textContent =
+        `${window.innerWidth} x ${window.innerHeight}`;
+    });
+  </script>
+</body>
+</html>
