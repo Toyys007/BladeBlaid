@@ -1,0 +1,186 @@
+diff --git a/chrome/browser/bladeblaid/bladeblaid_url_loader_throttle.h b/chrome/browser/bladeblaid/bladeblaid_url_loader_throttle.h
+new file mode 100644
+--- /dev/null
++++ b/chrome/browser/bladeblaid/bladeblaid_url_loader_throttle.h
+@@ -0,0 +1,64 @@
++// Copyright 2024 The BladeBlaid Authors
++// Use of this source code is governed by a BSD-style license.
++
++#ifndef CHROME_BROWSER_BLADEBLAID_BLADEBLAID_URL_LOADER_THROTTLE_H_
++#define CHROME_BROWSER_BLADEBLAID_BLADEBLAID_URL_LOADER_THROTTLE_H_
++
++#include "third_party/blink/public/common/loader/url_loader_throttle.h"
++#include "url/gurl.h"
++
++namespace bladeblaid {
++
++// URL loader throttle that blocks requests to known tracker domains.
++// This operates at the network layer to block subresources (scripts, images,
++// iframes) that are used for tracking.
++class BladeBlaidURLLoaderThrottle : public blink::URLLoaderThrottle {
++ public:
++  BladeBlaidURLLoaderThrottle(const GURL& top_frame_url, bool is_main_frame);
++  ~BladeBlaidURLLoaderThrottle() override;
++
++  // blink::URLLoaderThrottle implementation:
++  void WillStartRequest(network::ResourceRequest* request,
++                        bool* defer) override;
++  void WillRedirectRequest(
++      net::RedirectInfo* redirect_info,
++      const network::mojom::URLResponseHead& response_head,
++      bool* defer,
++      std::vector<std::string>* to_be_removed_headers,
++      net::HttpRequestHeaders* modified_headers,
++      net::HttpRequestHeaders* modified_cors_exempt_headers) override;
++
++  // Create a throttle, or nullptr if not needed.
++  static std::unique_ptr<BladeBlaidURLLoaderThrottle> MaybeCreate(
++      const GURL& top_frame_url,
++      bool is_main_frame);
++
++ private:
++  // Check if request should be blocked.
++  bool ShouldBlockRequest(const GURL& url, int resource_type);
++
++  // Sanitize URL if needed (for redirects).
++  void MaybeSanitizeURL(GURL* url);
++
++  GURL top_frame_url_;
++  bool is_main_frame_;
++};
++
++}  // namespace bladeblaid
++
++#endif  // CHROME_BROWSER_BLADEBLAID_BLADEBLAID_URL_LOADER_THROTTLE_H_
+
+diff --git a/chrome/browser/bladeblaid/bladeblaid_url_loader_throttle.cc b/chrome/browser/bladeblaid/bladeblaid_url_loader_throttle.cc
+new file mode 100644
+--- /dev/null
++++ b/chrome/browser/bladeblaid/bladeblaid_url_loader_throttle.cc
+@@ -0,0 +1,123 @@
++// Copyright 2024 The BladeBlaid Authors
++// Use of this source code is governed by a BSD-style license.
++
++#include "chrome/browser/bladeblaid/bladeblaid_url_loader_throttle.h"
++
++#include "base/logging.h"
++#include "chrome/browser/bladeblaid/tracker_blocker.h"
++#include "chrome/browser/bladeblaid/url_sanitizer.h"
++#include "services/network/public/cpp/resource_request.h"
++#include "services/network/public/mojom/fetch_api.mojom.h"
++
++namespace bladeblaid {
++
++namespace {
++
++// Map Chromium resource type to our ResourceType enum
++ResourceType GetResourceType(network::mojom::RequestDestination destination) {
++  switch (destination) {
++    case network::mojom::RequestDestination::kScript:
++    case network::mojom::RequestDestination::kServiceWorker:
++    case network::mojom::RequestDestination::kSharedWorker:
++    case network::mojom::RequestDestination::kWorker:
++      return ResourceType::kScript;
++    case network::mojom::RequestDestination::kImage:
++      return ResourceType::kImage;
++    case network::mojom::RequestDestination::kIframe:
++    case network::mojom::RequestDestination::kFrame:
++      return ResourceType::kSubFrame;
++    default:
++      return ResourceType::kOther;
++  }
++}
++
++}  // namespace
++
++BladeBlaidURLLoaderThrottle::BladeBlaidURLLoaderThrottle(
++    const GURL& top_frame_url,
++    bool is_main_frame)
++    : top_frame_url_(top_frame_url),
++      is_main_frame_(is_main_frame) {}
++
++BladeBlaidURLLoaderThrottle::~BladeBlaidURLLoaderThrottle() = default;
++
++// static
++std::unique_ptr<BladeBlaidURLLoaderThrottle>
++BladeBlaidURLLoaderThrottle::MaybeCreate(
++    const GURL& top_frame_url,
++    bool is_main_frame) {
++  // Check if any privacy features are enabled
++  TrackerBlocker* blocker = GetTrackerBlocker();
++  URLSanitizer* sanitizer = GetURLSanitizer();
++
++  if ((!blocker || !blocker->IsEnabled()) &&
++      (!sanitizer || !sanitizer->IsEnabled())) {
++    return nullptr;
++  }
++
++  return std::make_unique<BladeBlaidURLLoaderThrottle>(
++      top_frame_url, is_main_frame);
++}
++
++void BladeBlaidURLLoaderThrottle::WillStartRequest(
++    network::ResourceRequest* request,
++    bool* defer) {
++  // Check if this request should be blocked
++  if (ShouldBlockRequest(request->url,
++                         static_cast<int>(request->destination))) {
++    VLOG(1) << "BladeBlaid: Blocking tracker request: " << request->url.spec();
++    delegate_->CancelWithError(net::ERR_BLOCKED_BY_CLIENT,
++                               "BladeBlaid: Tracker blocked");
++    return;
++  }
++
++  // Sanitize URL for redirects and navigations
++  MaybeSanitizeURL(&request->url);
++}
++
++void BladeBlaidURLLoaderThrottle::WillRedirectRequest(
++    net::RedirectInfo* redirect_info,
++    const network::mojom::URLResponseHead& response_head,
++    bool* defer,
++    std::vector<std::string>* to_be_removed_headers,
++    net::HttpRequestHeaders* modified_headers,
++    net::HttpRequestHeaders* modified_cors_exempt_headers) {
++  // Check if redirect target should be blocked
++  if (ShouldBlockRequest(redirect_info->new_url, 0)) {
++    VLOG(1) << "BladeBlaid: Blocking tracker redirect: "
++            << redirect_info->new_url.spec();
++    delegate_->CancelWithError(net::ERR_BLOCKED_BY_CLIENT,
++                               "BladeBlaid: Tracker redirect blocked");
++    return;
++  }
++
++  // Sanitize redirect URL
++  MaybeSanitizeURL(&redirect_info->new_url);
++}
++
++bool BladeBlaidURLLoaderThrottle::ShouldBlockRequest(const GURL& url,
++                                                      int resource_type) {
++  TrackerBlocker* blocker = GetTrackerBlocker();
++  if (!blocker || !blocker->IsEnabled()) {
++    return false;
++  }
++
++  // Don't block main frame navigations here (handled by navigation throttle)
++  if (is_main_frame_) {
++    return false;
++  }
++
++  ResourceType type = GetResourceType(
++      static_cast<network::mojom::RequestDestination>(resource_type));
++
++  return blocker->ShouldBlockRequest(url, top_frame_url_, type);
++}
++
++void BladeBlaidURLLoaderThrottle::MaybeSanitizeURL(GURL* url) {
++  URLSanitizer* sanitizer = GetURLSanitizer();
++  if (!sanitizer || !sanitizer->IsEnabled()) {
++    return;
++  }
++
++  *url = sanitizer->SanitizeURL(*url);
++}
++
++}  // namespace bladeblaid
+

@@ -1,0 +1,50 @@
+diff --git a/chrome/browser/profiles/profile_impl.cc b/chrome/browser/profiles/profile_impl.cc
+--- a/chrome/browser/profiles/profile_impl.cc
++++ b/chrome/browser/profiles/profile_impl.cc
+@@ -XXX,6 +XXX,12 @@
+ #include "chrome/browser/profiles/profile_destroyer.h"
+ // ... other includes ...
+
++#if BUILDFLAG(IS_WIN)
++#include "base/command_line.h"
++#include "chrome/browser/bladeblaid/privacy_settings_manager.h"
++#include "chrome/browser/bladeblaid/search_engine_manager.h"
++#endif
++
+ namespace {
+ // ... namespace content ...
+ }  // namespace
+@@ -XXX,6 +XXX,27 @@ void ProfileImpl::DoFinalInit() {
+   // ... existing initialization ...
+
++#if BUILDFLAG(IS_WIN)
++  // Apply BladeBlaid profile settings if running with a BladeBlaid profile
++  const base::CommandLine& command_line =
++      *base::CommandLine::ForCurrentProcess();
++
++  if (command_line.HasSwitch("bladeblaid-profile")) {
++    std::string bladeblaid_profile_id =
++        command_line.GetSwitchValueASCII("bladeblaid-profile");
++
++    LOG(INFO) << "BladeBlaid: Initializing profile: " << bladeblaid_profile_id;
++
++    // Apply privacy settings
++    bladeblaid::ApplyBladeBlaidPrivacySettings(this, bladeblaid_profile_id);
++
++    // Apply search engine setting
++    bladeblaid::BladeBlaidProfileService* service =
++        bladeblaid::BladeBlaidProfileService::GetInstance();
++    if (service && service->IsInitialized()) {
++      const bladeblaid::BladeBlaidProfile* profile =
++          service->GetProfileById(bladeblaid_profile_id);
++      if (profile) {
++        bladeblaid::ApplyBladeBlaidSearchEngine(this, profile->search_engine);
++      }
++    }
++  }
++#endif
++
+   // Signal that profile initialization is complete
+   // ...
+ }
+

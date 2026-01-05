@@ -21,6 +21,34 @@ source_set("bladeblaid") {
   libs = [ "shell32.lib" ]
 }
 
+source_set("privacy") {
+  sources = [
+    "privacy_settings_manager.cc",
+    "privacy_settings_manager.h",
+    "search_engine_manager.cc",
+    "search_engine_manager.h",
+    "tracker_blocker.cc",
+    "tracker_blocker.h",
+    "url_sanitizer.cc",
+    "url_sanitizer.h",
+  ]
+
+  deps = [
+    ":bladeblaid",
+    "//base",
+    "//chrome/browser/content_settings:content_settings_factory",
+    "//chrome/browser/profiles",
+    "//chrome/browser/search_engines",
+    "//chrome/common:constants",
+    "//components/content_settings/core/browser",
+    "//components/content_settings/core/common",
+    "//components/prefs",
+    "//components/search_engines",
+    "//net",
+    "//url",
+  ]
+}
+
 source_set("webui") {
   sources = [
     "profiles_lite_ui.cc",

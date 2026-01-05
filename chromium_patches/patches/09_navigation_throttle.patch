@@ -1,0 +1,183 @@
+diff --git a/chrome/browser/bladeblaid/bladeblaid_navigation_throttle.h b/chrome/browser/bladeblaid/bladeblaid_navigation_throttle.h
+new file mode 100644
+--- /dev/null
++++ b/chrome/browser/bladeblaid/bladeblaid_navigation_throttle.h
+@@ -0,0 +1,54 @@
++// Copyright 2024 The BladeBlaid Authors
++// Use of this source code is governed by a BSD-style license.
++
++#ifndef CHROME_BROWSER_BLADEBLAID_BLADEBLAID_NAVIGATION_THROTTLE_H_
++#define CHROME_BROWSER_BLADEBLAID_BLADEBLAID_NAVIGATION_THROTTLE_H_
++
++#include <memory>
++
++#include "content/public/browser/navigation_throttle.h"
++
++namespace content {
++class NavigationHandle;
++}  // namespace content
++
++namespace bladeblaid {
++
++// Navigation throttle that applies BladeBlaid privacy features:
++// - URL sanitization (strips tracking parameters)
++// - Tracker blocking (blocks requests to known tracker domains)
++//
++// This throttle runs early in the navigation pipeline to sanitize
++// URLs before they are sent to the network.
++class BladeBlaidNavigationThrottle : public content::NavigationThrottle {
++ public:
++  explicit BladeBlaidNavigationThrottle(
++      content::NavigationHandle* navigation_handle);
++  ~BladeBlaidNavigationThrottle() override;
++
++  // content::NavigationThrottle implementation:
++  ThrottleCheckResult WillStartRequest() override;
++  ThrottleCheckResult WillRedirectRequest() override;
++  const char* GetNameForLogging() override;
++
++  // Create a throttle for a navigation, or nullptr if not needed.
++  static std::unique_ptr<BladeBlaidNavigationThrottle> MaybeCreate(
++      content::NavigationHandle* navigation_handle);
++
++ private:
++  // Process the URL - sanitize and check for trackers.
++  ThrottleCheckResult ProcessURL();
++
++  // Check if the current navigation should be blocked as a tracker.
++  bool ShouldBlockAsTracker();
++
++  // Sanitize the URL and redirect if tracking params were removed.
++  ThrottleCheckResult MaybeSanitizeURL();
++};
++
++}  // namespace bladeblaid
++
++#endif  // CHROME_BROWSER_BLADEBLAID_BLADEBLAID_NAVIGATION_THROTTLE_H_
+
+diff --git a/chrome/browser/bladeblaid/bladeblaid_navigation_throttle.cc b/chrome/browser/bladeblaid/bladeblaid_navigation_throttle.cc
+new file mode 100644
+--- /dev/null
++++ b/chrome/browser/bladeblaid/bladeblaid_navigation_throttle.cc
+@@ -0,0 +1,120 @@
++// Copyright 2024 The BladeBlaid Authors
++// Use of this source code is governed by a BSD-style license.
++
++#include "chrome/browser/bladeblaid/bladeblaid_navigation_throttle.h"
++
++#include "base/logging.h"
++#include "chrome/browser/bladeblaid/tracker_blocker.h"
++#include "chrome/browser/bladeblaid/url_sanitizer.h"
++#include "content/public/browser/navigation_handle.h"
++#include "content/public/browser/web_contents.h"
++#include "net/http/http_request_headers.h"
++
++namespace bladeblaid {
++
++BladeBlaidNavigationThrottle::BladeBlaidNavigationThrottle(
++    content::NavigationHandle* navigation_handle)
++    : content::NavigationThrottle(navigation_handle) {}
++
++BladeBlaidNavigationThrottle::~BladeBlaidNavigationThrottle() = default;
++
++content::NavigationThrottle::ThrottleCheckResult
++BladeBlaidNavigationThrottle::WillStartRequest() {
++  return ProcessURL();
++}
++
++content::NavigationThrottle::ThrottleCheckResult
++BladeBlaidNavigationThrottle::WillRedirectRequest() {
++  return ProcessURL();
++}
++
++const char* BladeBlaidNavigationThrottle::GetNameForLogging() {
++  return "BladeBlaidNavigationThrottle";
++}
++
++// static
++std::unique_ptr<BladeBlaidNavigationThrottle>
++BladeBlaidNavigationThrottle::MaybeCreate(
++    content::NavigationHandle* navigation_handle) {
++  // Only create for main frame navigations
++  if (!navigation_handle->IsInMainFrame()) {
++    return nullptr;
++  }
++
++  // Only create if privacy features are enabled
++  URLSanitizer* sanitizer = GetURLSanitizer();
++  TrackerBlocker* blocker = GetTrackerBlocker();
++
++  if ((!sanitizer || !sanitizer->IsEnabled()) &&
++      (!blocker || !blocker->IsEnabled())) {
++    return nullptr;
++  }
++
++  return std::make_unique<BladeBlaidNavigationThrottle>(navigation_handle);
++}
++
++content::NavigationThrottle::ThrottleCheckResult
++BladeBlaidNavigationThrottle::ProcessURL() {
++  // Check for tracker blocking first
++  if (ShouldBlockAsTracker()) {
++    VLOG(1) << "BladeBlaid: Blocked tracker navigation: "
++            << navigation_handle()->GetURL().spec();
++    return CANCEL;
++  }
++
++  // Then try URL sanitization
++  return MaybeSanitizeURL();
++}
++
++bool BladeBlaidNavigationThrottle::ShouldBlockAsTracker() {
++  TrackerBlocker* blocker = GetTrackerBlocker();
++  if (!blocker || !blocker->IsEnabled()) {
++    return false;
++  }
++
++  const GURL& url = navigation_handle()->GetURL();
++
++  // Get the initiator URL (page that started the navigation)
++  GURL initiator_url;
++  if (navigation_handle()->GetInitiatorOrigin().has_value()) {
++    initiator_url = navigation_handle()->GetInitiatorOrigin()->GetURL();
++  }
++
++  // Don't block direct navigations (user typed URL)
++  if (!initiator_url.is_valid()) {
++    return false;
++  }
++
++  // Check if this is a tracker
++  return blocker->ShouldBlockRequest(url, initiator_url,
++                                      ResourceType::kOther);
++}
++
++content::NavigationThrottle::ThrottleCheckResult
++BladeBlaidNavigationThrottle::MaybeSanitizeURL() {
++  URLSanitizer* sanitizer = GetURLSanitizer();
++  if (!sanitizer || !sanitizer->IsEnabled()) {
++    return PROCEED;
++  }
++
++  const GURL& original_url = navigation_handle()->GetURL();
++
++  // Skip non-HTTP(S) URLs
++  if (!original_url.SchemeIsHTTPOrHTTPS()) {
++    return PROCEED;
++  }
++
++  GURL sanitized_url = sanitizer->SanitizeURL(original_url);
++
++  // If URL was modified, redirect to sanitized version
++  if (sanitized_url != original_url) {
++    VLOG(1) << "BladeBlaid: Sanitized URL from " << original_url.spec()
++            << " to " << sanitized_url.spec();
++    // Note: We could redirect here, but that may cause issues.
++    // For MVP, we just log. Full redirect support requires more work.
++    // return content::NavigationThrottle::ThrottleCheckResult(REDIRECT, sanitized_url);
++  }
++
++  return PROCEED;
++}
++
++}  // namespace bladeblaid

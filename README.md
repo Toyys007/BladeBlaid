@@ -51,10 +51,12 @@ See `chromium_patches/example_profiles.json` for complete example.
 chromium_patches/
 ├── chrome/browser/bladeblaid/   # Core profile manager code
 │   ├── bladeblaid_profile_types.h
-│   ├── bladeblaid_profile_service.h
-│   ├── bladeblaid_profile_service.cc
-│   ├── profiles_lite_ui.h
-│   ├── profiles_lite_ui.cc
+│   ├── bladeblaid_profile_service.h/.cc
+│   ├── profiles_lite_ui.h/.cc
+│   ├── privacy_settings_manager.h/.cc  # Task B
+│   ├── search_engine_manager.h/.cc     # Task B
+│   ├── tracker_blocker.h/.cc           # Task B
+│   ├── url_sanitizer.h/.cc             # Task B
 │   └── BUILD.gn
 ├── patches/                      # Unified diffs for Chromium integration
 ├── example_profiles.json         # Example configuration
@@ -63,7 +65,7 @@ chromium_patches/
 
 ## Task A Implementation
 
-This commit implements Task A: Profile Manager skeleton
+Profile Manager skeleton:
 
 - ✅ profiles.json loader from `%LOCALAPPDATA%\BladeBlaid\`
 - ✅ JSON parsing with version validation (Chromium base/json)
@@ -71,6 +73,33 @@ This commit implements Task A: Profile Manager skeleton
 - ✅ Profile directory management (create/delete)
 - ✅ WebUI at `chrome://profiles-lite`
 - ✅ Menu item "Profiles…" integration
+
+## Task B Implementation
+
+Per-profile privacy defaults:
+
+- ✅ **Third-party cookie blocking** - Uses Chrome's content settings
+- ✅ **Tracker blocking** - MVP domain list (Google Analytics, Facebook, etc.)
+- ✅ **URL sanitization** - Strips utm_*, fbclid, gclid, msclkid, etc.
+- ✅ **WebRTC IP leak prevention** - Public interface only mode
+- ✅ **HTTPS-First mode** - Enabled by default
+- ✅ **Default search engine** - Bing for all new profiles
+
+### Privacy Features
+
+| Feature | Implementation |
+|---------|----------------|
+| 3P Cookie Blocking | `prefs::kCookieControlsMode` |
+| Tracker Blocking | Domain blocklist + beacon detection |
+| URL Sanitization | Navigation throttle strips tracking params |
+| WebRTC Protection | `default_public_interface_only` policy |
+| HTTPS-First | `prefs::kHttpsOnlyModeEnabled` |
+| DNT Header | `prefs::kEnableDoNotTrack` |
+
+### Blocked Tracking Parameters
+
+`utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`,
+`gclid`, `fbclid`, `msclkid`, `yclid`, `ttclid`, `ref`, `ref_src`, and more.
 
 ## Hard Rules
 

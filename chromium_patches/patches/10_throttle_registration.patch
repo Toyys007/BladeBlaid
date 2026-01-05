@@ -1,0 +1,30 @@
+diff --git a/chrome/browser/chrome_content_browser_client.cc b/chrome/browser/chrome_content_browser_client.cc
+--- a/chrome/browser/chrome_content_browser_client.cc
++++ b/chrome/browser/chrome_content_browser_client.cc
+@@ -XXX,6 +XXX,10 @@
+ #include "chrome/browser/browsing_data/chrome_browsing_data_remover_delegate.h"
+ // ... other includes ...
+
++#if BUILDFLAG(IS_WIN)
++#include "chrome/browser/bladeblaid/bladeblaid_navigation_throttle.h"
++#endif
++
+ namespace {
+ // ... namespace content ...
+ }  // namespace
+
+@@ -XXX,6 +XXX,15 @@ ChromeContentBrowserClient::CreateThrottlesForNavigation(
+   // ... existing throttles ...
+
++#if BUILDFLAG(IS_WIN)
++  // BladeBlaid privacy throttle - URL sanitization and tracker blocking
++  auto bladeblaid_throttle =
++      bladeblaid::BladeBlaidNavigationThrottle::MaybeCreate(handle);
++  if (bladeblaid_throttle) {
++    throttles.push_back(std::move(bladeblaid_throttle));
++  }
++#endif
++
+   return throttles;
+ }
+

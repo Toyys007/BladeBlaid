@@ -77,12 +77,25 @@ chrome/browser/bladeblaid/
 ├── bladeblaid_profile_service.h
 ├── bladeblaid_profile_service.cc
 ├── profiles_lite_ui.h
-└── profiles_lite_ui.cc
+├── profiles_lite_ui.cc
+├── privacy_settings_manager.h        # Task B
+├── privacy_settings_manager.cc       # Task B
+├── search_engine_manager.h           # Task B
+├── search_engine_manager.cc          # Task B
+├── tracker_blocker.h                 # Task B
+├── tracker_blocker.cc                # Task B
+├── url_sanitizer.h                   # Task B
+├── url_sanitizer.cc                  # Task B
+├── bladeblaid_navigation_throttle.h  # Task B
+├── bladeblaid_navigation_throttle.cc # Task B
+├── bladeblaid_url_loader_throttle.h  # Task B
+└── bladeblaid_url_loader_throttle.cc # Task B
 ```
 
 ### Files to Modify (Patches)
 See `patches/` directory for unified diffs:
 
+**Task A Patches:**
 1. **chrome/browser/BUILD.gn** - Add bladeblaid dependency
 2. **chrome/browser/chrome_browser_main.cc** - Initialize profile service
 3. **chrome/browser/ui/webui/chrome_web_ui_controller_factory.cc** - Register WebUI
@@ -90,6 +103,13 @@ See `patches/` directory for unified diffs:
 5. **chrome/browser/ui/toolbar/app_menu_model.cc** - Add menu item
 6. **chrome/browser/ui/browser_commands.cc/h** - Add command handler
 7. **chrome/browser/ui/browser_command_controller.cc** - Execute command
+
+**Task B Patches:**
+9. **Navigation throttle** - URL sanitization during navigation
+10. **chrome/browser/chrome_content_browser_client.cc** - Register navigation throttle
+11. **chrome/browser/profiles/profile_impl.cc** - Apply privacy settings on profile init
+12. **Resource throttle** - Block tracker subresources
+13. **URL loader throttle registration** - Register throttle in content browser client
 
 ## Step 4: Configure GN Build
 
@@ -191,6 +211,45 @@ You should see:
 1. Click the three-dot menu (⋮)
 2. Look for "Profiles…" menu item
 3. Click to open chrome://profiles-lite
+
+### 5. Verify Privacy Settings (Task B)
+
+**Third-Party Cookie Blocking:**
+1. Launch profile with `block_third_party_cookies: true`
+2. Visit: `https://www.whatismybrowser.com/detect/are-third-party-cookies-enabled`
+3. Should show third-party cookies as blocked
+
+**URL Sanitization:**
+1. Click a link with tracking params:
+   `https://example.com/?utm_source=test&utm_campaign=test&normal_param=keep`
+2. Check browser logs (or network tab) - utm_* params should be stripped
+3. `normal_param` should remain
+
+**Tracker Blocking:**
+1. Open DevTools Network tab
+2. Visit a site with trackers (most news sites)
+3. Look for blocked requests to domains like:
+   - google-analytics.com
+   - doubleclick.net
+   - facebook.net
+4. These should show as blocked/canceled
+
+**WebRTC IP Leak Test:**
+1. Launch profile with `webrtc_local_ip: false`
+2. Visit: `https://browserleaks.com/webrtc`
+3. Local/private IP addresses should NOT be exposed
+4. Only public IP (or none) should be visible
+
+**Search Engine:**
+1. Launch a fresh profile
+2. Open a new tab and type a search query in the address bar
+3. Should search with Bing (not Google)
+4. Check Settings > Search engine - should show Bing as default
+
+**HTTPS-First Mode:**
+1. Check `chrome://settings/security`
+2. "Always use secure connections" should be enabled
+3. Try visiting `http://` only site - should attempt HTTPS first
 
 ## Troubleshooting
 

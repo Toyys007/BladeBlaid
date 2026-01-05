@@ -1,0 +1,34 @@
+diff --git a/chrome/browser/chrome_content_browser_client.cc b/chrome/browser/chrome_content_browser_client.cc
+--- a/chrome/browser/chrome_content_browser_client.cc
++++ b/chrome/browser/chrome_content_browser_client.cc
+@@ -XXX,6 +XXX,10 @@
+ // ... after BladeBlaidNavigationThrottle include ...
+
++#if BUILDFLAG(IS_WIN)
++#include "chrome/browser/bladeblaid/bladeblaid_url_loader_throttle.h"
++#endif
++
+@@ -XXX,6 +XXX,20 @@ ChromeContentBrowserClient::CreateURLLoaderThrottles(
+   // ... existing throttles ...
+
++#if BUILDFLAG(IS_WIN)
++  // BladeBlaid tracker blocking throttle for subresources
++  {
++    GURL top_frame_url;
++    if (frame_tree_node_id != content::RenderFrameHost::kNoFrameTreeNodeId) {
++      auto* frame_tree_node = content::FrameTreeNode::GloballyFindByID(frame_tree_node_id);
++      if (frame_tree_node && frame_tree_node->current_frame_host()) {
++        top_frame_url = frame_tree_node->current_frame_host()->GetLastCommittedURL();
++      }
++    }
++    auto bladeblaid_throttle = bladeblaid::BladeBlaidURLLoaderThrottle::MaybeCreate(
++        top_frame_url, is_navigation);
++    if (bladeblaid_throttle) {
++      result.push_back(std::move(bladeblaid_throttle));
++    }
++  }
++#endif
++
+   return result;
+ }
+
